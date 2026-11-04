@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Le Programme</title>
-<meta name="description" content="Les dernières vidéos longues de tes chaînes YouTube, vérifiées toutes les 15 minutes.">
+<meta name="description" content="Les dernières vidéos longues de tes chaînes YouTube, vérifiées toutes les 30 minutes de 15 h à minuit.">
 <meta name="theme-color" content="#eef0f6" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -237,7 +237,7 @@ img { max-width: 100%; }
 </div>
 
 <footer class="wrap foot">
-  <span>Vidéos longues seulement, sans Shorts ni lives. Vérification toutes les 15 minutes environ.</span>
+  <span>Vidéos longues seulement, sans Shorts ni lives. Vérification toutes les 30 minutes, de 15 h à minuit.</span>
   <a href="https://github.com/corbiiy/yt-checker/edit/main/channels.txt">Ajouter une chaîne</a>
   <a href="https://github.com/corbiiy/yt-checker">Code source</a>
 </footer>
@@ -249,7 +249,8 @@ const VISIT_GAP = 30 * 60e3;          // 30 min away from the page starts a new 
 const FIRST_WINDOW = 48 * 3600e3;     // on a first visit, the last 48 h count as new
 const RECENT = 30 * 864e5;            // "Toutes" shows the last 30 days, older on request
 const POLL = 5 * 60e3;
-const STALE = 90 * 60e3;              // the check runs every 15 min; warn past 90 min
+const CHECK_FROM = 15;                // the workflow checks every 30 min from 15:00 to midnight, Paris time
+const STALE = 90;                     // warn after 90 min of check hours without a check
 
 const $ = (id) => document.getElementById(id);
 const fmtTime = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });
@@ -316,6 +317,15 @@ function unmark(ids) {
 const slug = (c) => (c.handle || c.name || "").replace(/^@/, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-");
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+const parisHour = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Paris", hour: "2-digit", hourCycle: "h23" });
+const inCheckHours = (ts) => Number(parisHour.formatToParts(ts).find((p) => p.type === "hour").value) >= CHECK_FROM;
+
+// Minutes of check hours between two instants, so nights and mornings don't count as "late".
+function checkMinutes(from, to) {
+  let minutes = 0;
+  for (let t = Math.max(from, to - 7 * 864e5); t < to; t += 5 * 60e3) if (inCheckHours(t)) minutes += 5;
+  return minutes;
+}
 
 function activeChannel() {
   const h = decodeURIComponent(location.hash.slice(1)).toLowerCase();
@@ -367,7 +377,8 @@ function avatar(c) {
 }
 
 function renderChecked(now) {
-  $("checked").textContent = `Vérifié ${ago(Date.parse(data.checked_at), now)}`;
+  const pause = inCheckHours(now) ? "" : ` · prochaine vérification à ${CHECK_FROM} h`;
+  $("checked").textContent = `Vérifié ${ago(Date.parse(data.checked_at), now)}${pause}`;
 }
 
 function renderHeader(now) {
@@ -384,7 +395,7 @@ function renderHeader(now) {
 function renderNotice(now) {
   const msgs = [];
   const names = (list) => list.map((c) => c.name).join(", ");
-  if (now - Date.parse(data.checked_at) > STALE) {
+  if (checkMinutes(Date.parse(data.checked_at), now) > STALE) {
     msgs.push(`Dernière vérification ${ago(Date.parse(data.checked_at), now)} : GitHub Actions a du retard, les toutes dernières vidéos peuvent manquer.`);
   }
   const down = data.channels.filter((c) => c.error === "feed_unavailable");

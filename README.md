@@ -5,7 +5,8 @@ on one page: https://corbiiy.github.io/yt-checker/
 
 - `channels.txt` lists the channels, one per line (`@handle`, a channel URL or a `UC…` id).
   Edit it on GitHub to add or remove one; the page updates a minute or two after the commit.
-- `.github/workflows/check.yml` runs `fetch.py` every 15 minutes, commits `data/state.json`
+- `.github/workflows/check.yml` runs `fetch.py` every 30 minutes from 15:00 to midnight,
+  Paris time (`CHECK_FROM` in `site/index.html` must match), commits `data/state.json`
   when the video list changes, and deploys `site/` to GitHub Pages.
 - `fetch.py` reads each channel's "UULF" playlist feed, which is the Videos tab without
   Shorts and live streams. It needs only the Python standard library.

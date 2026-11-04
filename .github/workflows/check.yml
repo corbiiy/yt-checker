@@ -2,7 +2,10 @@ name: Check for new videos
 
 on:
   schedule:
-    - cron: "4,19,34,49 * * * *"   # every 15 min, off the top of the hour when Actions is busiest
+    # Every 30 min from 15:04 to 23:34, Paris time; no checks from midnight to 3 PM.
+    # Minutes 4 and 34 stay off the top of the hour, when Actions is busiest.
+    - cron: "4,34 15-23 * * *"
+      timezone: "Europe/Paris"
   workflow_dispatch:
   push:
     branches: [main]
