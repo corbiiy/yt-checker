@@ -1,0 +1,4 @@
+site/videos.json
+__pycache__/
+.DS_Store
+.claude/

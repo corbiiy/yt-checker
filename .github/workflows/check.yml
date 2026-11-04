@@ -1,0 +1,52 @@
+name: Check for new videos
+
+on:
+  schedule:
+    - cron: "4,19,34,49 * * * *"   # every 15 min, off the top of the hour when Actions is busiest
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch the latest videos
+        run: python3 fetch.py
+
+      - name: Save the video list when it changed
+        run: |
+          git add data/state.json
+          if git diff --cached --quiet; then
+            echo "No new videos"
+            exit 0
+          fi
+          git config user.name "yt-checker bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "data: video list $(date -u +%Y-%m-%dT%H:%MZ)"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

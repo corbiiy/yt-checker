@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Le Programme</title>
+<meta name="description" content="Les dernières vidéos longues de tes chaînes YouTube, vérifiées toutes les 15 minutes.">
+<meta name="theme-color" content="#eef0f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Programme">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one TV-listing column. Day bands, then rows of time slot | thumbnail | title. */
+:root {
+  --paper: #eef0f6;
+  --card: #ffffff;
+  --ink: #12162b;
+  --muted: #586079;
+  --rule: #d6d9e5;
+  --signal: #ffd23f;
+  --on-signal: #12162b;
+  --focus: #2f45d6;
+  --warn: #6b4c00;
+  --warn-bg: #fff1c2;
+  --font-display: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-text: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #0d1020;
+    --card: #161b33;
+    --ink: #eceef7;
+    --muted: #9ba2bd;
+    --rule: #272d4b;
+    --focus: #93a4ff;
+    --warn: #ffe08a;
+    --warn-bg: #352b08;
+    color-scheme: dark;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 15px/1.45 var(--font-text);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.wrap {
+  max-width: 920px;
+  margin-inline: auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* Masthead */
+.mast { display: grid; gap: 12px; padding-block: calc(22px + env(safe-area-inset-top, 0px)) 16px; }
+.mast-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; }
+.logo { margin: 0; font: 800 clamp(2.5rem, 9vw, 3.75rem)/.84 var(--font-display); text-transform: uppercase; }
+.logo small { display: block; font-size: .4em; letter-spacing: .1em; margin-bottom: .12em; }
+.logo span { display: inline-block; background: var(--signal); color: var(--on-signal); padding: .06em .12em 0; }
+.checked { margin: 0; color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+.status { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; }
+.news { margin: 0; font-size: 1.05rem; font-weight: 600; text-wrap: balance; }
+.btn {
+  font: 600 .85rem/1 var(--font-text);
+  color: var(--ink);
+  background: transparent;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  padding: 10px 15px;
+  cursor: pointer;
+}
+.btn:hover { background: var(--ink); color: var(--paper); }
+
+/* Channel strip */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--paper); border-block: 1px solid var(--rule); }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-block: 10px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px 0 5px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font: 600 .9rem/1 var(--font-text);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.chip.all { padding-left: 15px; }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.chip .av { width: 30px; height: 30px; }
+.count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 21px;
+  height: 21px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--signal);
+  color: var(--on-signal);
+  font-size: .75rem;
+  font-variant-numeric: tabular-nums;
+}
+.av { flex: none; width: 22px; height: 22px; border-radius: 50%; object-fit: cover; background: var(--rule); }
+.av.letter { display: inline-grid; place-items: center; color: var(--ink); font: 700 .7rem/1 var(--font-text); }
+
+.notice { margin: 14px 0 0; padding: 10px 13px; border-radius: 8px; background: var(--warn-bg); color: var(--warn); font-size: .9rem; }
+
+/* Listings */
+.day { margin-top: 28px; }
+.day-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 0 0 6px;
+  font: 800 1.95rem/1 var(--font-display);
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.day-date { color: var(--muted); font: 500 .9rem/1.2 var(--font-text); text-transform: none; }
+.slots { list-style: none; margin: 0; padding: 0; }
+.slot { border-top: 1px solid var(--rule); }
+.slot-link {
+  display: grid;
+  grid-template-columns: 4.4rem minmax(0, 15rem) minmax(0, 1fr);
+  grid-template-areas: "time thumb info";
+  gap: 16px;
+  align-items: start;
+  padding-block: 13px;
+  color: inherit;
+  text-decoration: none;
+}
+.time {
+  grid-area: time;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  font: 800 1.7rem/1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+.tag {
+  padding: 4px 6px 3px;
+  border-radius: 3px;
+  background: var(--signal);
+  color: var(--on-signal);
+  font: 700 .66rem/1 var(--font-text);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+.thumb { grid-area: thumb; display: block; aspect-ratio: 16 / 9; max-width: 100%; overflow: hidden; border-radius: 6px; background: var(--rule); }
+.thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.slot.is-new .thumb { box-shadow: 0 0 0 3px var(--signal); }
+.info { grid-area: info; display: grid; gap: 7px; min-width: 0; }
+.title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.slot-link:hover .title { text-decoration: underline; text-underline-offset: 3px; }
+.meta { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; color: var(--muted); font-size: .85rem; }
+.who { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); font-weight: 500; }
+
+.more { display: block; margin: 24px auto 0; }
+.empty { padding-block: 32px; color: var(--muted); text-align: center; }
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-top: 44px;
+  padding-block: 18px 32px;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: .85rem;
+}
+.foot a { color: inherit; text-underline-offset: 3px; }
+
+@media (max-width: 620px) {
+  .slot-link {
+    grid-template-columns: minmax(0, 44%) minmax(0, 1fr);
+    grid-template-areas: "thumb time" "thumb info";
+    grid-template-rows: auto 1fr;
+    gap: 5px 12px;
+    padding-block: 11px;
+  }
+  .time { flex-direction: row; align-items: center; gap: 8px; font-size: 1.2rem; }
+  .title { font-size: .92rem; }
+  .meta { font-size: .78rem; gap: 2px 8px; }
+  .day-head { font-size: 1.65rem; }
+}
+</style>
+</head>
+<body>
+<header class="wrap mast">
+  <div class="mast-top">
+    <h1 class="logo"><small>Le</small> <span>Programme</span></h1>
+    <p class="checked" id="checked">Chargement…</p>
+  </div>
+  <div class="status">
+    <p class="news" id="news" aria-live="polite"></p>
+    <button class="btn" id="mark" type="button" hidden>Tout marquer comme vu</button>
+  </div>
+</header>
+
+<nav class="bar" aria-label="Chaînes">
+  <div class="wrap chips" id="chips"></div>
+</nav>
+
+<div class="wrap">
+  <p class="notice" id="notice" role="status" hidden></p>
+  <main id="feed"></main>
+  <noscript><p class="empty">Active JavaScript pour voir les vidéos.</p></noscript>
+</div>
+
+<footer class="wrap foot">
+  <span>Vidéos longues seulement, sans Shorts ni lives. Vérification toutes les 15 minutes environ.</span>
+  <a href="https://github.com/corbiiy/yt-checker/edit/main/channels.txt">Ajouter une chaîne</a>
+  <a href="https://github.com/corbiiy/yt-checker">Code source</a>
+</footer>
+
+<script>
+"use strict";
+const STORE_KEY = "le-programme:v1";
+const VISIT_GAP = 30 * 60e3;          // 30 min away from the page starts a new visit
+const FIRST_WINDOW = 48 * 3600e3;     // on a first visit, the last 48 h count as new
+const RECENT = 30 * 864e5;            // "Toutes" shows the last 30 days, older on request
+const POLL = 5 * 60e3;
+const STALE = 90 * 60e3;              // the check runs every 15 min; warn past 90 min
+
+const $ = (id) => document.getElementById(id);
+const fmtTime = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });
+const fmtDate = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
+const fmtDateYear = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+const fmtWeekday = new Intl.DateTimeFormat("fr-FR", { weekday: "long" });
+const fmtViews = new Intl.NumberFormat("fr-FR", { notation: "compact", maximumFractionDigits: 1, roundingMode: "trunc" });
+const rtf = new Intl.RelativeTimeFormat("fr", { numeric: "auto", style: "short" });
+
+let data = null;
+let fresh = new Set();
+let lastVisit = null;
+let showOlder = false;
+
+function el(tag, attrs, ...kids) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) if (v != null && v !== false) node.setAttribute(k, v);
+  node.append(...kids.flat().filter((k) => k != null && k !== false));
+  return node;
+}
+
+function readStore() { try { return JSON.parse(localStorage.getItem(STORE_KEY)); } catch { return null; } }
+function writeStore(s) { try { localStorage.setItem(STORE_KEY, JSON.stringify(s)); } catch { /* private mode: badges reset next time */ } }
+
+// "Nouveau" = videos this browser had not seen at the start of the visit, plus any that arrive during it.
+function updateFresh(now = Date.now()) {
+  const ids = data.videos.map((v) => v.id);
+  let s = readStore();
+  if (!s || !Array.isArray(s.seen)) {
+    s = { seen: [], prev: null, fresh: data.videos.filter((v) => now - Date.parse(v.published) < FIRST_WINDOW).map((v) => v.id) };
+  } else {
+    const seen = new Set(s.seen);
+    const arrivals = ids.filter((id) => !seen.has(id));
+    if (now - (s.active || 0) > VISIT_GAP) {
+      s.prev = s.active || null;
+      s.fresh = arrivals;
+    } else {
+      s.fresh = [...new Set([...(s.fresh || []), ...arrivals])];
+    }
+  }
+  const live = new Set(ids);
+  s.fresh = s.fresh.filter((id) => live.has(id));
+  s.seen = [...new Set([...ids, ...s.seen])].slice(0, 3000);
+  s.active = now;
+  writeStore(s);
+  fresh = new Set(s.fresh);
+  lastVisit = s.prev;
+}
+
+function touch() {
+  const s = readStore();
+  if (s) { s.active = Date.now(); writeStore(s); }
+}
+
+function unmark(ids) {
+  const s = readStore();
+  if (s) { s.fresh = (s.fresh || []).filter((id) => !ids.includes(id)); writeStore(s); }
+  ids.forEach((id) => fresh.delete(id));
+}
+
+const slug = (c) => (c.handle || c.name || "").replace(/^@/, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-");
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+
+function activeChannel() {
+  const h = decodeURIComponent(location.hash.slice(1)).toLowerCase();
+  return (h && data.channels.find((c) => c.id && slug(c) === h)) || null;
+}
+
+function selectChannel(c) {
+  if (c) location.hash = slug(c);
+  else { history.pushState("", document.title, location.pathname + location.search); render(); }
+  window.scrollTo({ top: 0 });
+}
+
+function ago(ts, now) {
+  const mins = Math.round((now - ts) / 60e3);
+  if (mins < 1) return "à l’instant";
+  if (mins < 60) return rtf.format(-mins, "minute");
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return rtf.format(-hours, "hour");
+  return rtf.format(-Math.round(hours / 24), "day");
+}
+
+function when(ts, now) {
+  const d = new Date(ts);
+  const diff = Math.round((startOfDay(d) - startOfDay(new Date(now))) / 864e5);
+  const day = diff === 0 ? "aujourd’hui" : diff === -1 ? "hier" : `${fmtWeekday.format(d)} ${fmtDate.format(d)}`;
+  return `${day} à ${fmtTime.format(d)}`;
+}
+
+function dayLabel(d, now) {
+  const diff = Math.round((startOfDay(d) - startOfDay(new Date(now))) / 864e5);
+  const date = (d.getFullYear() === new Date(now).getFullYear() ? fmtDate : fmtDateYear).format(d);
+  const weekday = fmtWeekday.format(d);
+  if (diff === 0) return ["Aujourd’hui", `${weekday} ${date}`];
+  if (diff === -1) return ["Hier", `${weekday} ${date}`];
+  return [cap(weekday), date];
+}
+
+function views(n) {
+  const unit = n >= 1e6 ? "de vues" : n > 1 ? "vues" : "vue";
+  return `${fmtViews.format(n)} ${unit}`;
+}
+
+function avatar(c) {
+  const letter = () => el("span", { class: "av letter", "aria-hidden": "true" }, (c.name || "?").charAt(0).toUpperCase());
+  if (!c.avatar) return letter();
+  const img = el("img", { class: "av", src: c.avatar, alt: "", width: "30", height: "30", loading: "lazy", referrerpolicy: "no-referrer" });
+  img.addEventListener("error", () => img.replaceWith(letter()), { once: true });
+  return img;
+}
+
+function renderChecked(now) {
+  $("checked").textContent = `Vérifié ${ago(Date.parse(data.checked_at), now)}`;
+}
+
+function renderHeader(now) {
+  const n = fresh.size;
+  const since = lastVisit ? `depuis ta dernière visite (${when(lastVisit, now)})` : "ces dernières 48 h";
+  $("news").textContent = n === 0
+    ? `Rien de nouveau ${since}.`
+    : `${n} nouvelle${n > 1 ? "s" : ""} vidéo${n > 1 ? "s" : ""} ${since}.`;
+  $("mark").hidden = n === 0;
+  document.title = n ? `(${n}) Le Programme` : "Le Programme";
+  renderChecked(now);
+}
+
+function renderNotice(now) {
+  const msgs = [];
+  const names = (list) => list.map((c) => c.name).join(", ");
+  if (now - Date.parse(data.checked_at) > STALE) {
+    msgs.push(`Dernière vérification ${ago(Date.parse(data.checked_at), now)} : GitHub Actions a du retard, les toutes dernières vidéos peuvent manquer.`);
+  }
+  const down = data.channels.filter((c) => c.error === "feed_unavailable");
+  if (down.length) msgs.push(`YouTube n’a pas répondu pour ${names(down)} : ces vidéos datent de la vérification précédente.`);
+  const missing = data.channels.filter((c) => c.error === "not_found");
+  if (missing.length) msgs.push(`Chaîne introuvable : ${missing.map((c) => c.key).join(", ")}. Vérifie l’orthographe dans channels.txt.`);
+  $("notice").textContent = msgs.join(" ");
+  $("notice").hidden = msgs.length === 0;
+}
+
+function renderChips(active) {
+  const counts = new Map();
+  for (const v of data.videos) if (fresh.has(v.id)) counts.set(v.ch, (counts.get(v.ch) || 0) + 1);
+  const all = el("button", { type: "button", class: "chip all", "aria-pressed": String(!active) }, "Toutes");
+  all.addEventListener("click", () => selectChannel(null));
+  const chips = [all];
+  for (const c of data.channels) {
+    if (!c.id) continue;
+    const n = counts.get(c.id) || 0;
+    const chip = el("button", { type: "button", class: "chip", "aria-pressed": String(active === c) },
+      avatar(c), c.name, n ? el("span", { class: "count", title: `${n} nouvelle${n > 1 ? "s" : ""}` }, String(n)) : null);
+    chip.addEventListener("click", () => selectChannel(active === c ? null : c));
+    chips.push(chip);
+  }
+  $("chips").replaceChildren(...chips);
+}
+
+function row(v, c, now) {
+  const isNew = fresh.has(v.id);
+  const published = Date.parse(v.published);
+  const link = el("a", { class: "slot-link", href: `https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}`, target: "_blank", rel: "noopener" },
+    el("span", { class: "time" },
+      el("time", { datetime: v.published }, fmtTime.format(published)),
+      isNew ? el("span", { class: "tag" }, "Nouveau") : null),
+    el("span", { class: "thumb" },
+      el("img", { src: `https://i.ytimg.com/vi/${encodeURIComponent(v.id)}/hqdefault.jpg`, alt: "", width: "480", height: "360", loading: "lazy", decoding: "async" })),
+    el("span", { class: "info" },
+      el("span", { class: "title" }, v.title),
+      el("span", { class: "meta" },
+        c ? el("span", { class: "who" }, avatar(c), c.name) : null,
+        v.views != null ? el("span", {}, views(v.views)) : null,
+        now - published < 7 * 864e5 ? el("span", {}, ago(published, now)) : null)));
+  link.addEventListener("click", () => { if (fresh.has(v.id)) { unmark([v.id]); render(); } });
+  return el("li", { class: isNew ? "slot is-new" : "slot" }, link);
+}
+
+function render() {
+  if (!data) return;
+  const now = Date.now();
+  const active = activeChannel();
+  const byId = new Map(data.channels.filter((c) => c.id).map((c) => [c.id, c]));
+  renderHeader(now);
+  renderNotice(now);
+  renderChips(active);
+
+  let vids = active ? data.videos.filter((v) => v.ch === active.id) : data.videos;
+  let older = 0;
+  if (!active && !showOlder) {
+    const recent = vids.filter((v) => now - Date.parse(v.published) <= RECENT);
+    older = vids.length - recent.length;
+    vids = recent;
+  }
+
+  const days = new Map();
+  for (const v of vids) {
+    const d = new Date(v.published);
+    const key = startOfDay(d);
+    if (!days.has(key)) days.set(key, { d, items: [] });
+    days.get(key).items.push(v);
+  }
+
+  const sections = [];
+  for (const { d, items } of days.values()) {
+    const [name, date] = dayLabel(d, now);
+    sections.push(el("section", { class: "day" },
+      el("h2", { class: "day-head" }, name, el("span", { class: "day-date" }, date)),
+      el("ol", { class: "slots" }, items.map((v) => row(v, byId.get(v.ch), now)))));
+  }
+  if (!vids.length) {
+    sections.push(el("p", { class: "empty" }, active ? "Aucune vidéo longue trouvée pour cette chaîne." : "Aucune vidéo ces 30 derniers jours."));
+  }
+  if (older) {
+    const more = el("button", { type: "button", class: "btn more" }, `Afficher les ${older} vidéos plus anciennes`);
+    more.addEventListener("click", () => { showOlder = true; render(); });
+    sections.push(more);
+  }
+  $("feed").replaceChildren(...sections);
+}
+
+async function refresh() {
+  try {
+    const res = await fetch(`videos.json?t=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    data = await res.json();
+    updateFresh();
+    render();
+  } catch (err) {
+    if (!data) {
+      $("checked").textContent = "";
+      $("news").textContent = "Impossible de charger les vidéos. Nouvel essai dans 5 minutes.";
+    }
+  }
+}
+
+$("mark").addEventListener("click", () => { unmark([...fresh]); render(); });
+window.addEventListener("hashchange", render);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") touch();
+  else refresh();
+});
+setInterval(() => { if (document.visibilityState === "visible") refresh(); }, POLL);
+setInterval(() => { if (data) renderChecked(Date.now()); }, 30e3);
+refresh();
+</script>
+</body>
+</html>
