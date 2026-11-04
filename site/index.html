@@ -277,12 +277,15 @@ function writeStore(s) { try { localStorage.setItem(STORE_KEY, JSON.stringify(s)
 // "Nouveau" = videos this browser had not seen at the start of the visit, plus any that arrive during it.
 function updateFresh(now = Date.now()) {
   const ids = data.videos.map((v) => v.id);
+  const recent = (v) => now - Date.parse(v.published) < FIRST_WINDOW;
   let s = readStore();
   if (!s || !Array.isArray(s.seen)) {
-    s = { seen: [], prev: null, fresh: data.videos.filter((v) => now - Date.parse(v.published) < FIRST_WINDOW).map((v) => v.id) };
+    s = { seen: [], prev: null, fresh: data.videos.filter(recent).map((v) => v.id) };
   } else {
     const seen = new Set(s.seen);
-    const arrivals = ids.filter((id) => !seen.has(id));
+    // A channel with none of its videos seen here was just added: as on a first visit, only its last 48 h count.
+    const known = new Set(data.videos.filter((v) => seen.has(v.id)).map((v) => v.ch));
+    const arrivals = data.videos.filter((v) => !seen.has(v.id) && (known.has(v.ch) || recent(v))).map((v) => v.id);
     if (now - (s.active || 0) > VISIT_GAP) {
       s.prev = s.active || null;
       s.fresh = arrivals;
