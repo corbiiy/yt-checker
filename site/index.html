@@ -249,7 +249,7 @@ const VISIT_GAP = 30 * 60e3;          // 30 min away from the page starts a new 
 const FIRST_WINDOW = 48 * 3600e3;     // on a first visit, the last 48 h count as new
 const RECENT = 30 * 864e5;            // "Toutes" shows the last 30 days, older on request
 const POLL = 5 * 60e3;
-const CHECK_FROM = 15;                // the workflow checks every 30 min from 15:00 to midnight, Paris time
+const CHECK_FROM = 15;                // railway-trigger/ starts a check every 30 min from 15:00 to midnight, Paris time
 const STALE = 90;                     // warn after 90 min of check hours without a check
 
 const $ = (id) => document.getElementById(id);
@@ -396,7 +396,7 @@ function renderNotice(now) {
   const msgs = [];
   const names = (list) => list.map((c) => c.name).join(", ");
   if (checkMinutes(Date.parse(data.checked_at), now) > STALE) {
-    msgs.push(`Dernière vérification ${ago(Date.parse(data.checked_at), now)} : GitHub Actions a du retard, les toutes dernières vidéos peuvent manquer.`);
+    msgs.push(`Dernière vérification ${ago(Date.parse(data.checked_at), now)} : la vérification automatique a du retard, les toutes dernières vidéos peuvent manquer.`);
   }
   const down = data.channels.filter((c) => c.error === "feed_unavailable");
   if (down.length) msgs.push(`YouTube n’a pas répondu pour ${names(down)} : ces vidéos datent de la vérification précédente.`);
