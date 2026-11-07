@@ -1,14 +1,19 @@
 #!/bin/sh
-# Run by the Railway cron service "trigger" (schedule "4,34 13-22 * * *", in UTC, set in the
-# service settings). Starts the "Check for new videos" workflow, but only from 15:00 to
-# midnight, Paris time, so the same UTC schedule works in summer and winter time.
+# Run by the Railway cron service "trigger" (schedule "4,34 7-22 * * *", in UTC, set in the
+# service settings). Starts the "Check for new videos" workflow, but only until midnight, Paris
+# time, from 15:00 on weekdays and from 9:00 at the weekend, so the same UTC schedule works in
+# summer and winter time. CHECK_FROM in site/index.html must match.
 # GITHUB_TOKEN: fine-grained token with "Actions: read and write" on corbiiy/yt-checker.
 set -eu
 
-hour=$(TZ=Europe/Paris date +%H)
-hour=${hour#0}
-if [ "$hour" -lt 15 ]; then
-  echo "Skipped: ${hour}h in Paris, outside 15:00-24:00"
+# Day (1 = Monday ... 7 = Sunday) and hour in Paris, read at once so midnight can't fall between.
+set -- $(TZ=Europe/Paris date '+%u %H')
+day=$1
+hour=${2#0}
+from=15
+if [ "$day" -ge 6 ]; then from=9; fi
+if [ "$hour" -lt "$from" ]; then
+  echo "Skipped: ${hour}h in Paris, outside ${from}:00-24:00"
   exit 0
 fi
 

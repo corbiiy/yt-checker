@@ -9,10 +9,10 @@ on one page: https://corbiiy.github.io/yt-checker/
   list changes, and deploys `site/` to GitHub Pages. It runs on every push and whenever
   `railway-trigger/` starts it.
 - `railway-trigger/` is a Railway cron service (project "Le Programme", service "trigger")
-  that starts the workflow every 30 minutes from 15:04 to 23:34, Paris time. Its schedule,
-  `4,34 13-22 * * *` in UTC, is set in the service settings, and `trigger.sh` skips the
-  slots before 15:00 Paris, so summer time needs no change (`CHECK_FROM` in
-  `site/index.html` must match). It needs a `GITHUB_TOKEN` variable: a fine-grained token
+  that starts the workflow every 30 minutes until 23:34, Paris time: from 15:04 on weekdays
+  and from 9:04 at the weekend. Its schedule, `4,34 7-22 * * *` in UTC, is set in the
+  service settings, and `trigger.sh` skips the slots before that day's start hour in Paris,
+  so summer time needs no change (`CHECK_FROM` in `site/index.html` must match). It needs a `GITHUB_TOKEN` variable: a fine-grained token
   with "Actions: read and write" on this repository only. GitHub's own `schedule:` trigger
   never ran here, which is why the start comes from Railway.
 - `fetch.py` reads each channel's "UULF" playlist feed, which is the Videos tab without
