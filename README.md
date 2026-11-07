@@ -18,7 +18,11 @@ on one page: https://corbiiy.github.io/yt-checker/
 - `fetch.py` reads each channel's "UULF" playlist feed, which is the Videos tab without
   Shorts and live streams. It needs only the Python standard library.
 - The page marks videos as **Nouveau** when this browser hadn't seen them at the start of
-  the visit (a visit ends after 30 minutes away). On a first visit, the last 48 hours count.
+  the visit (a visit ends after 30 minutes away) and they're newer than the newest video
+  already seen from that channel: when a video is deleted or turns into a Short, the feed
+  brings an older one back, and that one isn't new. On a first visit, and for a newly added
+  channel, the last 48 hours count. A video marked new always shows, even when it's older
+  than the 30 days "Toutes" lists.
 
 Run it locally:
 

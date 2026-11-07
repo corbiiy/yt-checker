@@ -284,9 +284,15 @@ function updateFresh(now = Date.now()) {
     s = { seen: [], prev: null, fresh: data.videos.filter(recent).map((v) => v.id) };
   } else {
     const seen = new Set(s.seen);
-    // A channel with none of its videos seen here was just added: as on a first visit, only its last 48 h count.
-    const known = new Set(data.videos.filter((v) => seen.has(v.id)).map((v) => v.ch));
-    const arrivals = data.videos.filter((v) => !seen.has(v.id) && (known.has(v.ch) || recent(v))).map((v) => v.id);
+    // Only uploads newer than the newest video already seen from the same channel count. An older one
+    // can turn up when a newer video leaves the feed (deleted, or turned into a Short): the feed holds
+    // 15 videos, so the 16th slides back in. A channel with nothing seen here was just added: as on a
+    // first visit, only its last 48 h count.
+    const newest = new Map();
+    for (const v of data.videos) if (seen.has(v.id)) newest.set(v.ch, Math.max(newest.get(v.ch) || 0, Date.parse(v.published)));
+    const arrivals = data.videos
+      .filter((v) => !seen.has(v.id) && (newest.has(v.ch) ? Date.parse(v.published) > newest.get(v.ch) : recent(v)))
+      .map((v) => v.id);
     if (now - (s.active || 0) > VISIT_GAP) {
       s.prev = s.active || null;
       s.fresh = arrivals;
@@ -454,7 +460,8 @@ function render() {
   let vids = active ? data.videos.filter((v) => v.ch === active.id) : data.videos;
   let older = 0;
   if (!active && !showOlder) {
-    const recent = vids.filter((v) => now - Date.parse(v.published) <= RECENT);
+    // A video marked "Nouveau" always shows, however old, so the count above can always be found.
+    const recent = vids.filter((v) => fresh.has(v.id) || now - Date.parse(v.published) <= RECENT);
     older = vids.length - recent.length;
     vids = recent;
   }
