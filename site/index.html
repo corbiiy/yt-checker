@@ -71,6 +71,7 @@ img { max-width: 100%; }
 .logo { margin: 0; font: 800 clamp(2.5rem, 9vw, 3.75rem)/.84 var(--font-display); text-transform: uppercase; }
 .logo small { display: block; font-size: .4em; letter-spacing: .1em; margin-bottom: .12em; }
 .logo span { display: inline-block; background: var(--signal); color: var(--on-signal); padding: .06em .12em 0; }
+.check { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
 .checked { margin: 0; color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
 .status { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; }
 .news { margin: 0; font-size: 1.05rem; font-weight: 600; text-wrap: balance; }
@@ -84,6 +85,8 @@ img { max-width: 100%; }
   cursor: pointer;
 }
 .btn:hover { background: var(--ink); color: var(--paper); }
+.btn.small { padding: 7px 12px; font-size: .8rem; }
+.btn:disabled, .btn:disabled:hover { background: transparent; color: var(--ink); opacity: .6; cursor: progress; }
 
 /* Channel strip */
 .bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--paper); border-block: 1px solid var(--rule); }
@@ -218,7 +221,10 @@ img { max-width: 100%; }
 <header class="wrap mast">
   <div class="mast-top">
     <h1 class="logo"><small>Le</small> <span>Programme</span></h1>
-    <p class="checked" id="checked">Chargement…</p>
+    <div class="check">
+      <p class="checked" id="checked">Chargement…</p>
+      <button class="btn small" id="verify" type="button">Vérifier maintenant</button>
+    </div>
   </div>
   <div class="status">
     <p class="news" id="news" aria-live="polite"></p>
@@ -251,6 +257,8 @@ const RECENT = 30 * 864e5;            // "Toutes" shows the last 30 days, older 
 const POLL = 5 * 60e3;
 const CHECK_FROM = { weekday: 15, weekend: 9 }; // railway-trigger/ starts a check every 30 min from this hour to midnight, Paris time
 const STALE = 90;                     // warn after 90 min of check hours without a check
+const VERIFY_URL = "https://button-production-2f62.up.railway.app/check"; // railway-button/ starts a check
+const VERIFY_WAIT = 4 * 60e3;         // a check and its deploy take about a minute
 
 const $ = (id) => document.getElementById(id);
 const fmtTime = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });
@@ -264,6 +272,7 @@ let data = null;
 let fresh = new Set();
 let lastVisit = null;
 let showOlder = false;
+let verifyError = "";
 
 function el(tag, attrs, ...kids) {
   const node = document.createElement(tag);
@@ -407,6 +416,7 @@ function renderHeader(now) {
 function renderNotice(now) {
   const msgs = [];
   const names = (list) => list.map((c) => c.name).join(", ");
+  if (verifyError) msgs.push(verifyError);
   if (checkMinutes(Date.parse(data.checked_at), now) > STALE) {
     msgs.push(`Dernière vérification ${ago(Date.parse(data.checked_at), now)} : la vérification automatique a du retard, les toutes dernières vidéos peuvent manquer.`);
   }
@@ -513,6 +523,33 @@ async function refresh() {
   }
 }
 
+// "Vérifier maintenant": railway-button/ starts a check (or tells when the last one started,
+// if that was under 2 min ago), then the page reloads the list until it is newer than that.
+async function verifyNow() {
+  const btn = $("verify");
+  btn.disabled = true;
+  btn.textContent = "Vérification…";
+  verifyError = "";
+  try {
+    const res = await fetch(VERIFY_URL, { method: "POST" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const since = Date.parse((await res.json()).at);
+    const until = Date.now() + VERIFY_WAIT;
+    while (!(data && Date.parse(data.checked_at) >= since)) {
+      if (Date.now() > until) throw new Error("timeout");
+      await new Promise((r) => setTimeout(r, 5000));
+      await refresh();
+    }
+  } catch {
+    verifyError = "La vérification demandée n’a pas abouti. Réessaie dans quelques minutes.";
+    render();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Vérifier maintenant";
+  }
+}
+
+$("verify").addEventListener("click", verifyNow);
 $("mark").addEventListener("click", () => { unmark([...fresh]); render(); });
 window.addEventListener("hashchange", render);
 document.addEventListener("visibilitychange", () => {

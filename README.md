@@ -15,6 +15,13 @@ on one page: https://corbiiy.github.io/yt-checker/
   so summer time needs no change (`CHECK_FROM` in `site/index.html` must match). It needs a `GITHUB_TOKEN` variable: a fine-grained token
   with "Actions: read and write" on this repository only. GitHub's own `schedule:` trigger
   never ran here, which is why the start comes from Railway.
+- `railway-button/` is a small Railway web service (service "button",
+  `https://button-production-2f62.up.railway.app`) behind the page's **Vérifier maintenant**
+  button. `POST /check` starts the workflow at most once every 2 minutes (a second press
+  waits for the same check), and the page reloads the list until it is newer than that start.
+  Its `GITHUB_TOKEN` is a reference to the trigger's (`${{trigger.GITHUB_TOKEN}}`), so a new
+  token goes into "trigger" only, followed by a redeploy of "button". The service sleeps when
+  unused, so the first press after a while takes a few more seconds.
 - `fetch.py` reads each channel's "UULF" playlist feed, which is the Videos tab without
   Shorts and live streams. It needs only the Python standard library.
 - The page marks videos as **Nouveau** when this browser hadn't seen them at the start of
